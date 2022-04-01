@@ -13,7 +13,6 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sync"
 	"time"
 
@@ -35,8 +34,9 @@ func Setup(accessToken string) error {
 func GetDailyMessages() ([]string, error) {
 	var (
 		now  = time.Now().UTC()
-		r    = regexp.MustCompile(`!\{.+\}|https?:\/\/.+(\s|$)`)
 		msgs = make([]string, 0, 5000)
+		wg   = new(sync.WaitGroup)
+		mux  = new(sync.Mutex)
 	)
 
 	searchFunc := func(offset int) int {
@@ -51,24 +51,20 @@ func GetDailyMessages() ([]string, error) {
 			Bot(false).
 			Execute()
 
-		for _, msg := range res.Hits {
-			if msg.Content != "" {
-				plain := r.ReplaceAllString(msg.Content, "")
-				_msgs = append(_msgs, plain)
-			}
+		for i, msg := range res.Hits {
+			_msgs[i] = msg.Content
 		}
 
+		mux.Lock()
 		msgs = append(msgs, _msgs...)
+		mux.Unlock()
 
 		return int(res.TotalHits)
 	}
 
 	// 総メッセージ数を取得するために1回先にAPIを叩く
 	totalHits := searchFunc(0)
-	num := totalHits / 100 // 並列で回す数
-
-	wg := new(sync.WaitGroup)
-	for i := 0; i < num; i++ {
+	for i := 0; i < totalHits/100; i++ {
 		wg.Add(1)
 
 		go func(i int) {

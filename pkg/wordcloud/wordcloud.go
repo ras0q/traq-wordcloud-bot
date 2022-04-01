@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"regexp"
 	"strings"
 
 	"github.com/ikawaha/kagome-dict/ipa"
@@ -66,8 +67,10 @@ func parseToNode(msgs []string) (map[string]int, error) {
 	}
 
 	wordMap := make(map[string]int)
+	r := regexp.MustCompile(`!\{.+\}|https?:\/\/.+(\s|$)`)
 
 	for _, msg := range msgs {
+		msg := r.ReplaceAllString(msg, "")
 		wm := make(map[string]struct{})
 
 		tokens := t.Tokenize(msg)
