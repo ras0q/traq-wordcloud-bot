@@ -40,7 +40,7 @@ func GetDailyMessages() ([]string, error) {
 	)
 
 	searchFunc := func(offset int) int {
-		_msgs := make([]string, 0, 100)
+		_msgs := make([]string, 100)
 
 		res, _, _ := cli.MessageApi.
 			SearchMessages(auth).
