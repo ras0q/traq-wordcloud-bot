@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"sort"
 	"time"
 
@@ -37,6 +38,8 @@ func main() {
 	if err := cron.Setup(f); err != nil {
 		log.Fatal(err)
 	}
+
+	runtime.Goexit()
 }
 
 func postTodayWordcloudToTraq(channelID string) error {
