@@ -1,0 +1,9 @@
+linters:
+  enable:
+  - godox
+  - nlreturn
+  - ifshort
+  - predeclared
+  - revive
+  - tagliatelle
+  - wsl

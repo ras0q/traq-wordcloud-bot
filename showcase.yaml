@@ -1,0 +1,15 @@
+type: 'runtime'
+
+startup: |
+  go mod download
+  go build -o main
+
+https: on
+
+entrypoint: './main'
+
+http_proxy: 80
+
+branch:
+  master: null
+  main: null
