@@ -13,7 +13,7 @@ func Setup(f func()) error {
 		cron.WithChain(cron.Recover(cron.DefaultLogger)),
 	)
 
-	if _, err := c.AddFunc("* * * * *", f); err != nil {
+	if _, err := c.AddFunc("50 23 * * *", f); err != nil {
 		return fmt.Errorf("failed to add cron job: %w", err)
 	}
 
