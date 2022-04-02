@@ -20,14 +20,29 @@ func Benchmark_main(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	_, img, err := wordcloud.GenerateWordcloud(msgs)
+	wordMap, img, err := wordcloud.GenerateWordcloud(msgs)
 	if err != nil {
 		b.Fatal(err)
 	}
+
+	b.Log(len(wordMap))
 
 	file, err := imageToFile(img, imageName)
 	if err != nil {
 		b.Fatal(err)
 	}
 	defer file.Close()
+
+	// fileID, err := traqapi.PostFile(accessToken, channelID, file)
+	// if err != nil {
+	// 	b.Fatal(err)
+	// }
+
+	// if err := traqapi.PostMessage(
+	// 	channelID,
+	// 	generateMessageContent(wordMap, fileID),
+	// 	true,
+	// ); err != nil {
+	// 	b.Fatal(err)
+	// }
 }

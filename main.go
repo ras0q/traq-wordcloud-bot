@@ -86,7 +86,6 @@ func imageToFile(img image.Image, path string) (*os.File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating wordcloud file: %w", err)
 	}
-	defer f.Close()
 
 	if err := png.Encode(f, img); err != nil {
 		return nil, fmt.Errorf("Error encoding wordcloud: %w", err)
