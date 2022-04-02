@@ -5,14 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"image"
-	"image/png"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -77,30 +74,7 @@ func GetDailyMessages() ([]string, error) {
 	return msgs, nil
 }
 
-func PostImage(accessToken string, img image.Image, path string, channelID string) (string, error) {
-	p, _ := filepath.Abs(path)
-
-	file, err := os.Create(p)
-	if err != nil {
-		return "", fmt.Errorf("Error creating wordcloud file: %w", err)
-	}
-	defer file.Close()
-
-	if err := png.Encode(file, img); err != nil {
-		return "", fmt.Errorf("Error encoding wordcloud: %w", err)
-	}
-
-	_, _ = file.Seek(0, os.SEEK_SET)
-
-	fileID, err := postFile(accessToken, channelID, file)
-	if err != nil {
-		return "", fmt.Errorf("Error creating wordcloud: %w", err)
-	}
-
-	return fileID, nil
-}
-
-func postFile(accessToken string, channelID string, file *os.File) (string, error) {
+func PostFile(accessToken string, channelID string, file *os.File) (string, error) {
 	// NOTE: go-traqがcontent-typeをapplication/octet-streamにしてしまうので自前でAPIを叩く
 	// Ref: https://github.com/traPtitech/go-traq/blob/2c7a5f9aa48ef67a6bd6daf4018ca2dabbbbb2f3/client.go#L304
 	var b bytes.Buffer
