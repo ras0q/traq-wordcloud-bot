@@ -7,9 +7,9 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func Setup(f func()) error {
+func Setup(f func(), loc *time.Location) error {
 	c := cron.New(
-		cron.WithLocation(time.FixedZone("Asia/Tokyo", 9*60*60)),
+		cron.WithLocation(loc),
 		cron.WithChain(cron.Recover(cron.DefaultLogger)),
 	)
 

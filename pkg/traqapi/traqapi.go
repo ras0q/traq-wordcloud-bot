@@ -28,9 +28,9 @@ func Setup(accessToken string) error {
 	return nil
 }
 
-func GetDailyMessages() ([]string, error) {
+func GetDailyMessages(loc *time.Location) ([]string, error) {
 	var (
-		now  = time.Now().UTC()
+		now  = time.Now().In(loc)
 		msgs = make([]string, 0, 5000)
 		wg   = new(sync.WaitGroup)
 		mux  = new(sync.Mutex)
@@ -39,14 +39,19 @@ func GetDailyMessages() ([]string, error) {
 	searchFunc := func(offset int) int {
 		_msgs := make([]string, 100)
 
-		res, _, _ := cli.MessageApi.
+		res, resp, err := cli.MessageApi.
 			SearchMessages(auth).
-			Before(time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.UTC)).
-			After(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)).
+			Before(time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 99, loc).UTC()).
+			After(time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).UTC()).
 			Limit(100).
 			Offset(int32(offset * 100)).
 			Bot(false).
 			Execute()
+		if err != nil {
+			panic(err) // TODO: handle error
+		} else if resp.StatusCode != http.StatusOK {
+			panic(fmt.Errorf("failed to search messages: %s", resp.Status)) // TODO: handle error
+		}
 
 		for i, msg := range res.Hits {
 			_msgs[i] = msg.Content

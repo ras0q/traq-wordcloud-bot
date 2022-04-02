@@ -25,6 +25,7 @@ const (
 var (
 	accessToken = os.Getenv(accessTokenKey)
 	channelID   = os.Getenv(channelIDKey)
+	jst         = time.FixedZone("Asia/Tokyo", 9*60*60)
 )
 
 func main() {
@@ -38,7 +39,7 @@ func main() {
 		}
 	}
 
-	if err := cron.Setup(f); err != nil {
+	if err := cron.Setup(f, jst); err != nil {
 		log.Fatal(err)
 	}
 
@@ -46,7 +47,7 @@ func main() {
 }
 
 func postTodayWordcloudToTraq(channelID string) error {
-	msgs, err := traqapi.GetDailyMessages()
+	msgs, err := traqapi.GetDailyMessages(jst)
 	if err != nil {
 		return fmt.Errorf("failed to get daily messages: %w", err)
 	}
@@ -60,6 +61,7 @@ func postTodayWordcloudToTraq(channelID string) error {
 	if err != nil {
 		return fmt.Errorf("Error converting image to file: %w", err)
 	}
+	defer file.Close()
 
 	fileID, err := traqapi.PostFile(accessToken, channelID, file)
 	if err != nil {
@@ -112,7 +114,7 @@ func generateMessageContent(wordMap map[string]int, fileID string) string {
 
 	jstToday := time.
 		Now().
-		In(time.FixedZone("Asia/Tokyo", 9*60*60)).
+		In(jst).
 		Format("2006/01/02")
 
 	return fmt.Sprintf(
