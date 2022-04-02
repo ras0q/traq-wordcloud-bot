@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/ikawaha/kagome-dict/ipa v1.0.4
 	github.com/ikawaha/kagome/v2 v2.7.0
+	github.com/magefile/mage v1.13.0
 	github.com/psykhi/wordclouds v0.0.0-20220103101922-7e3171a66cbc
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/traPtitech/go-traq v0.0.0-20220321203555-2c7a5f9aa48e
