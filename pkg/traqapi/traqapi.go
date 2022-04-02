@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/traPtitech/go-traq"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -32,11 +33,11 @@ func GetDailyMessages(loc *time.Location) ([]string, error) {
 	var (
 		now  = time.Now().In(loc)
 		msgs = make([]string, 0, 5000)
-		wg   = new(sync.WaitGroup)
+		eg   = new(errgroup.Group)
 		mux  = new(sync.Mutex)
 	)
 
-	searchFunc := func(offset int) int {
+	searchFunc := func(offset int) (int, error) {
 		_msgs := make([]string, 100)
 
 		res, resp, err := cli.MessageApi.
@@ -48,9 +49,9 @@ func GetDailyMessages(loc *time.Location) ([]string, error) {
 			Bot(false).
 			Execute()
 		if err != nil {
-			panic(err) // TODO: handle error
+			return -1, fmt.Errorf("failed to execute request: %w", err)
 		} else if resp.StatusCode != http.StatusOK {
-			panic(fmt.Errorf("failed to search messages: %s", resp.Status)) // TODO: handle error
+			return -1, fmt.Errorf("failed to search messages: %s", resp.Status)
 		}
 
 		for i, msg := range res.Hits {
@@ -61,20 +62,30 @@ func GetDailyMessages(loc *time.Location) ([]string, error) {
 		msgs = append(msgs, _msgs...)
 		mux.Unlock()
 
-		return int(res.TotalHits)
+		return int(res.TotalHits), nil
 	}
 
 	// 総メッセージ数を取得するために1回先にAPIを叩く
-	totalHits := searchFunc(0)
-	for i := 0; i < totalHits/100; i++ {
-		wg.Add(1)
-
-		go func(i int) {
-			defer wg.Done()
-			searchFunc(i)
-		}(i)
+	totalHits, err := searchFunc(0)
+	if err != nil {
+		return nil, err
 	}
-	wg.Wait()
+
+	for i := 0; i < totalHits/100; i++ {
+		i := i
+
+		eg.Go(func() error {
+			if _, err := searchFunc(i); err != nil {
+				return fmt.Errorf("failed to search messages: %w", err)
+			}
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return nil, fmt.Errorf("failed to wait goroutines: %w", err)
+	}
 
 	return msgs, nil
 }
