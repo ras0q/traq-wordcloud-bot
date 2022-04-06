@@ -3,6 +3,7 @@ module github.com/Ras96/traq-wordcloud-bot
 go 1.18
 
 require (
+	github.com/ikawaha/kagome-dict v1.0.4
 	github.com/ikawaha/kagome-dict/ipa v1.0.4
 	github.com/ikawaha/kagome/v2 v2.7.0
 	github.com/magefile/mage v1.13.0
@@ -17,7 +18,6 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/ikawaha/kagome-dict v1.0.4 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect

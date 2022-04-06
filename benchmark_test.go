@@ -20,7 +20,18 @@ func Benchmark_main(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	wordMap, img, err := wordcloud.GenerateWordcloud(msgs)
+	// TODO: テスト用のメッセージを取得する
+	voc, err := traqapi.GetVocabularyInDirectoryChannel(dictChannelID)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	udic, err := wordcloud.MakeUserDict(voc)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	wordMap, img, err := wordcloud.GenerateWordcloud(msgs, udic)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -33,7 +44,7 @@ func Benchmark_main(b *testing.B) {
 	}
 	defer file.Close()
 
-	// fileID, err := traqapi.PostFile(accessToken, channelID, file)
+	// fileID, err := traqapi.PostFile(accessToken, trendChannelID, file)
 	// if err != nil {
 	// 	b.Fatal(err)
 	// }
@@ -45,4 +56,6 @@ func Benchmark_main(b *testing.B) {
 	// ); err != nil {
 	// 	b.Fatal(err)
 	// }
+
+	b.Log("benchmark ended successfully")
 }

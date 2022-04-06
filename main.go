@@ -17,15 +17,17 @@ import (
 )
 
 const (
-	accessTokenKey = "TRAQ_ACCESS_TOKEN"
-	channelIDKey   = "TRAQ_CHANNEL_ID"
-	imageName      = "wordcloud.png"
+	accessTokenKey    = "TRAQ_ACCESS_TOKEN"
+	trendChannelIDKey = "TRAQ_TREND_CHANNEL_ID"
+	dictChannelIDKey  = "TRAQ_DICT_CHANNEL_ID"
+	imageName         = "wordcloud.png"
 )
 
 var (
-	accessToken = os.Getenv(accessTokenKey)
-	channelID   = os.Getenv(channelIDKey)
-	jst         = time.FixedZone("Asia/Tokyo", 9*60*60)
+	accessToken    = os.Getenv(accessTokenKey)
+	trendChannelID = os.Getenv(trendChannelIDKey)
+	dictChannelID  = os.Getenv(dictChannelIDKey)
+	jst            = time.FixedZone("Asia/Tokyo", 9*60*60)
 )
 
 func main() {
@@ -34,7 +36,7 @@ func main() {
 	}
 
 	f := func() {
-		if err := postTodayWordcloudToTraq(channelID); err != nil {
+		if err := postTodayWordcloudToTraq(trendChannelID, dictChannelID); err != nil {
 			log.Println("[ERROR]", err)
 		}
 	}
@@ -46,13 +48,23 @@ func main() {
 	runtime.Goexit()
 }
 
-func postTodayWordcloudToTraq(channelID string) error {
+func postTodayWordcloudToTraq(trendChannelID string, dictChannelID string) error {
 	msgs, err := traqapi.GetDailyMessages(jst)
 	if err != nil {
 		return fmt.Errorf("failed to get daily messages: %w", err)
 	}
 
-	wordMap, img, err := wordcloud.GenerateWordcloud(msgs)
+	voc, err := traqapi.GetVocabularyInDirectoryChannel(dictChannelID)
+	if err != nil {
+		return fmt.Errorf("failed to get vocabulary: %w", err)
+	}
+
+	udic, err := wordcloud.MakeUserDict(voc)
+	if err != nil {
+		return fmt.Errorf("failed to make user dictionary: %w", err)
+	}
+
+	wordMap, img, err := wordcloud.GenerateWordcloud(msgs, udic)
 	if err != nil {
 		return fmt.Errorf("Error generating wordcloud: %w", err)
 	}
@@ -63,13 +75,13 @@ func postTodayWordcloudToTraq(channelID string) error {
 	}
 	defer file.Close()
 
-	fileID, err := traqapi.PostFile(accessToken, channelID, file)
+	fileID, err := traqapi.PostFile(accessToken, trendChannelID, file)
 	if err != nil {
 		return fmt.Errorf("Error posting file: %w", err)
 	}
 
 	if err := traqapi.PostMessage(
-		channelID,
+		trendChannelID,
 		generateMessageContent(wordMap, fileID),
 		true,
 	); err != nil {

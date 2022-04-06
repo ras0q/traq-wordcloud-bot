@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ikawaha/kagome-dict/dict"
 	"github.com/ikawaha/kagome-dict/ipa"
 	"github.com/ikawaha/kagome/v2/tokenizer"
 	"github.com/psykhi/wordclouds"
@@ -32,8 +33,41 @@ func isExclusiveWord(word string) bool {
 	return false
 }
 
-func GenerateWordcloud(msgs []string) (map[string]int, image.Image, error) {
-	wordMap, err := parseToNode(msgs)
+func MakeUserDict(voc map[string]struct{}) (*dict.UserDict, error) {
+	r := make(dict.UserDictRecords, 0, len(voc))
+
+	for k := range voc {
+		replaced := strings.TrimSpace(k)
+		lines := strings.Split(replaced, "\n")
+
+		if len(lines[0]) == 0 {
+			continue
+		}
+
+		d := dict.UserDicRecord{
+			Text:   lines[0],
+			Tokens: []string{lines[0]},
+			Yomi:   []string{"ふめい"},
+			Pos:    "カスタム名詞",
+		}
+
+		if len(lines) > 1 {
+			d.Yomi = []string{lines[1]}
+		}
+
+		r = append(r, d)
+	}
+
+	udic, err := r.NewUserDict()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user dict: %w", err)
+	}
+
+	return udic, nil
+}
+
+func GenerateWordcloud(msgs []string, udic *dict.UserDict) (map[string]int, image.Image, error) {
+	wordMap, err := parseToNode(msgs, udic)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse to node: %w", err)
 	}
@@ -60,8 +94,8 @@ func GenerateWordcloud(msgs []string) (map[string]int, image.Image, error) {
 	return wordMap, wc.Draw(), nil
 }
 
-func parseToNode(msgs []string) (map[string]int, error) {
-	t, err := tokenizer.New(ipa.Dict(), tokenizer.OmitBosEos())
+func parseToNode(msgs []string, udic *dict.UserDict) (map[string]int, error) {
+	t, err := tokenizer.New(ipa.Dict(), tokenizer.UserDict(udic), tokenizer.OmitBosEos())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokenizer: %w", err)
 	}
@@ -78,7 +112,7 @@ func parseToNode(msgs []string) (map[string]int, error) {
 			fea := token.Features()
 			sur := strings.ToLower(token.Surface)
 
-			if fea[0] == "名詞" && fea[1] == "一般" && len(sur) > 1 {
+			if (fea[0] == "名詞" && fea[1] == "一般" || fea[0] == "カスタム名詞") && len(sur) > 1 {
 				if _, found := wm[sur]; !found && !isExclusiveWord(sur) {
 					wm[sur] = struct{}{}
 				}
