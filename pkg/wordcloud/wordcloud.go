@@ -21,6 +21,11 @@ var exclusiveWords = []string{
 	"あと",
 	"ユーザー",
 	"自分",
+	"部屋",
+	"部室",
+	"課題",
+	"チャンネル",
+	"ー",
 }
 
 func isExclusiveWord(word string) bool {
