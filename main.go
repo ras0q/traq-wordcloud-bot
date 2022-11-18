@@ -35,13 +35,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	f := func() {
-		if err := postTodayWordcloudToTraq(trendChannelID, dictChannelID); err != nil {
-			log.Println("[ERROR]", err)
-		}
+	cm := cron.Map{
+		"50 23 * * *": func() {
+			if err := postTodayWordcloudToTraq(trendChannelID, dictChannelID); err != nil {
+				log.Println("[ERROR]", err)
+			}
+		},
 	}
 
-	if err := cron.Setup(f, jst); err != nil {
+	if err := cron.Setup(cm, jst); err != nil {
 		log.Fatal(err)
 	}
 

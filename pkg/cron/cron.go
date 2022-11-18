@@ -7,14 +7,18 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func Setup(f func(), loc *time.Location) error {
+type Map map[string]func()
+
+func Setup(cm Map, loc *time.Location) error {
 	c := cron.New(
 		cron.WithLocation(loc),
 		cron.WithChain(cron.Recover(cron.DefaultLogger)),
 	)
 
-	if _, err := c.AddFunc("50 23 * * *", f); err != nil {
-		return fmt.Errorf("failed to add cron job: %w", err)
+	for spec, f := range cm {
+		if _, err := c.AddFunc(spec, f); err != nil {
+			return fmt.Errorf("failed to add cron job: %w", err)
+		}
 	}
 
 	c.Start()
