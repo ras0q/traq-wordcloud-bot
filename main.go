@@ -28,6 +28,7 @@ var (
 	trendChannelID = os.Getenv(trendChannelIDKey)
 	dictChannelID  = os.Getenv(dictChannelIDKey)
 	jst            = time.FixedZone("Asia/Tokyo", 9*60*60)
+	yearlyMsgs     []string
 )
 
 func main() {
@@ -35,9 +36,31 @@ func main() {
 		log.Fatal(err)
 	}
 
+	msgs, err := getYearlyMessages(jst)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	yearlyMsgs = msgs
+
 	cm := cron.Map{
+		// daily wordcloud
 		"50 23 * * *": func() {
-			if err := postTodayWordcloudToTraq(trendChannelID, dictChannelID); err != nil {
+			msgs, err := getDailyMessages(time.Now().In(jst), jst)
+			if err != nil {
+				log.Println("[ERROR]", err)
+			}
+
+			yearlyMsgs = append(yearlyMsgs, msgs...)
+			log.Println("[INFO] yearlyMsgs is initialized", len(yearlyMsgs))
+
+			if err := postWordcloudToTraq(msgs, trendChannelID, dictChannelID); err != nil {
+				log.Println("[ERROR]", err)
+			}
+		},
+		// yearly wordcloud
+		"50 23 31 12 *": func() {
+			if err := postWordcloudToTraq(yearlyMsgs, trendChannelID, dictChannelID); err != nil {
 				log.Println("[ERROR]", err)
 			}
 		},
@@ -50,12 +73,37 @@ func main() {
 	runtime.Goexit()
 }
 
-func postTodayWordcloudToTraq(trendChannelID string, dictChannelID string) error {
-	msgs, err := traqapi.GetDailyMessages(jst)
-	if err != nil {
-		return fmt.Errorf("failed to get daily messages: %w", err)
+func getDailyMessages(date time.Time, loc *time.Location) ([]string, error) {
+	date = date.In(loc)
+
+	return traqapi.GetMessages(
+		time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 99, loc).UTC(),
+		time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, loc).UTC(),
+	)
+}
+
+func getYearlyMessages(loc *time.Location) ([]string, error) {
+	now := time.Now().In(loc)
+	year := now.Year()
+	date := time.Date(year, 1, 1, 0, 0, 0, 0, loc)
+	msgs := make([]string, 0)
+
+	for date.Before(now) {
+		m, err := getDailyMessages(date, loc)
+		if err != nil {
+			return nil, err
+		}
+
+		msgs = append(msgs, m...)
+		date = date.AddDate(0, 0, 1)
+
+		time.Sleep(5 * time.Second)
 	}
 
+	return msgs, nil
+}
+
+func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID string) error {
 	voc, err := traqapi.GetVocabularyInDirectoryChannel(dictChannelID)
 	if err != nil {
 		return fmt.Errorf("failed to get vocabulary: %w", err)

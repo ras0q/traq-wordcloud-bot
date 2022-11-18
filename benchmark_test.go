@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/Ras96/traq-wordcloud-bot/pkg/traqapi"
 	"github.com/Ras96/traq-wordcloud-bot/pkg/wordcloud"
@@ -15,7 +16,7 @@ func Benchmark_main(b *testing.B) {
 	}
 
 	// TODO: テスト用のメッセージを取得する
-	msgs, err := traqapi.GetDailyMessages(jst)
+	msgs, err := getDailyMessages(time.Now(), jst)
 	if err != nil {
 		b.Fatal(err)
 	}
