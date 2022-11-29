@@ -20,6 +20,7 @@ const (
 	accessTokenKey    = "TRAQ_ACCESS_TOKEN"
 	trendChannelIDKey = "TRAQ_TREND_CHANNEL_ID"
 	dictChannelIDKey  = "TRAQ_DICT_CHANNEL_ID"
+	hallOfFameKey     = "TRAQ_HALL_OF_FAME_CHANNEL_ID"
 	imageName         = "wordcloud.png"
 )
 
@@ -27,6 +28,7 @@ var (
 	accessToken    = os.Getenv(accessTokenKey)
 	trendChannelID = os.Getenv(trendChannelIDKey)
 	dictChannelID  = os.Getenv(dictChannelIDKey)
+	hallOfFameChannelID = os.Getenv(hallOfFameKey)
 	jst            = time.FixedZone("Asia/Tokyo", 9*60*60)
 	yearlyMsgs     []string
 )
@@ -104,7 +106,7 @@ func getYearlyMessages(loc *time.Location) ([]string, error) {
 }
 
 func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID string) error {
-	voc, err := traqapi.GetVocabularyInDirectoryChannel(dictChannelID)
+	voc, err := traqapi.GetWordList(dictChannelID)
 	if err != nil {
 		return fmt.Errorf("failed to get vocabulary: %w", err)
 	}
@@ -114,7 +116,12 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 		return fmt.Errorf("failed to make user dictionary: %w", err)
 	}
 
-	wordMap, img, err := wordcloud.GenerateWordcloud(msgs, udic)
+	hof, err := traqapi.GetWordList(hallOfFameChannelID)
+	if err != nil {
+		return fmt.Errorf("failed to get hall of fame: %w", err)
+	}
+
+	wordMap, img, err := wordcloud.GenerateWordcloud(msgs, udic, hof)
 	if err != nil {
 		return fmt.Errorf("Error generating wordcloud: %w", err)
 	}

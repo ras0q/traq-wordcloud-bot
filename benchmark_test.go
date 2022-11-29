@@ -22,7 +22,7 @@ func Benchmark_main(b *testing.B) {
 	}
 
 	// TODO: テスト用のメッセージを取得する
-	voc, err := traqapi.GetVocabularyInDirectoryChannel(dictChannelID)
+	voc, err := traqapi.GetWordList(dictChannelID)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -32,7 +32,12 @@ func Benchmark_main(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	wordMap, img, err := wordcloud.GenerateWordcloud(msgs, udic)
+	hof, err := traqapi.GetWordList(hallOfFameChannelID)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	wordMap, img, err := wordcloud.GenerateWordcloud(msgs, udic, hof)
 	if err != nil {
 		b.Fatal(err)
 	}

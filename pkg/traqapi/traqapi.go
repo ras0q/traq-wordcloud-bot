@@ -160,8 +160,8 @@ func PostMessage(channelID string, content string, embed bool) error {
 	return nil
 }
 
-func GetVocabularyInDirectoryChannel(dictChannelID string) (map[string]struct{}, error) {
-	res, resp, err := cli.MessageApi.GetMessages(auth, dictChannelID).Execute()
+func GetWordList(channelID string) (map[string]struct{}, error) {
+	res, resp, err := cli.MessageApi.GetMessages(auth, channelID).Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get messages: %w", err)
 	}

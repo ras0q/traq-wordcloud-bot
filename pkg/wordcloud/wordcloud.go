@@ -16,21 +16,20 @@ import (
 // wordcloudに含めない単語
 var exclusiveWords = []string{
 	"人",
-	"trap",
 	"感じ",
 	"あと",
-	"ユーザー",
-	"自分",
-	"部屋",
-	"部室",
-	"課題",
-	"チャンネル",
 	"ー",
 }
 
-func isExclusiveWord(word string) bool {
+func isExclusiveWord(word string, hof map[string]struct{}) bool {
 	for _, w := range exclusiveWords {
-		if w == word {
+		if strings.EqualFold(w, word) {
+			return true
+		}
+	}
+
+	for w := range hof {
+		if strings.EqualFold(w, word) {
 			return true
 		}
 	}
@@ -71,8 +70,8 @@ func MakeUserDict(voc map[string]struct{}) (*dict.UserDict, error) {
 	return udic, nil
 }
 
-func GenerateWordcloud(msgs []string, udic *dict.UserDict) (map[string]int, image.Image, error) {
-	wordMap, err := parseToNode(msgs, udic)
+func GenerateWordcloud(msgs []string, udic *dict.UserDict, hof map[string]struct{}) (map[string]int, image.Image, error) {
+	wordMap, err := parseToNode(msgs, udic, hof)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse to node: %w", err)
 	}
@@ -99,7 +98,7 @@ func GenerateWordcloud(msgs []string, udic *dict.UserDict) (map[string]int, imag
 	return wordMap, wc.Draw(), nil
 }
 
-func parseToNode(msgs []string, udic *dict.UserDict) (map[string]int, error) {
+func parseToNode(msgs []string, udic *dict.UserDict, hof map[string]struct{}) (map[string]int, error) {
 	t, err := tokenizer.New(ipa.Dict(), tokenizer.UserDict(udic), tokenizer.OmitBosEos())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokenizer: %w", err)
@@ -118,7 +117,7 @@ func parseToNode(msgs []string, udic *dict.UserDict) (map[string]int, error) {
 			sur := strings.ToLower(token.Surface)
 
 			if (fea[0] == "名詞" && fea[1] == "一般" || fea[0] == "カスタム名詞") && len(sur) > 1 {
-				if _, found := wm[sur]; !found && !isExclusiveWord(sur) {
+				if _, found := wm[sur]; !found && !isExclusiveWord(sur, hof) {
 					wm[sur] = struct{}{}
 				}
 			}
