@@ -11,9 +11,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Ras96/traq-wordcloud-bot/pkg/cron"
-	"github.com/Ras96/traq-wordcloud-bot/pkg/traqapi"
-	"github.com/Ras96/traq-wordcloud-bot/pkg/wordcloud"
+	"github.com/ras0q/traq-wordcloud-bot/pkg/cron"
+	"github.com/ras0q/traq-wordcloud-bot/pkg/traqapi"
+	"github.com/ras0q/traq-wordcloud-bot/pkg/wordcloud"
 )
 
 const (
@@ -25,12 +25,12 @@ const (
 )
 
 var (
-	accessToken    = os.Getenv(accessTokenKey)
-	trendChannelID = os.Getenv(trendChannelIDKey)
-	dictChannelID  = os.Getenv(dictChannelIDKey)
+	accessToken         = os.Getenv(accessTokenKey)
+	trendChannelID      = os.Getenv(trendChannelIDKey)
+	dictChannelID       = os.Getenv(dictChannelIDKey)
 	hallOfFameChannelID = os.Getenv(hallOfFameKey)
-	jst            = time.FixedZone("Asia/Tokyo", 9*60*60)
-	yearlyMsgs     []string
+	jst                 = time.FixedZone("Asia/Tokyo", 9*60*60)
+	yearlyMsgs          []string
 )
 
 func main() {

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Ras96/traq-wordcloud-bot/pkg/traqapi"
-	"github.com/Ras96/traq-wordcloud-bot/pkg/wordcloud"
+	"github.com/ras0q/traq-wordcloud-bot/pkg/traqapi"
+	"github.com/ras0q/traq-wordcloud-bot/pkg/wordcloud"
 )
 
 func Benchmark_main(b *testing.B) {

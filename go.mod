@@ -1,4 +1,4 @@
-module github.com/Ras96/traq-wordcloud-bot
+module github.com/ras0q/traq-wordcloud-bot
 
 go 1.18
 
