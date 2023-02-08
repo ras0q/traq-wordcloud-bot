@@ -1,6 +1,6 @@
 module github.com/ras0q/traq-wordcloud-bot
 
-go 1.18
+go 1.19
 
 require (
 	github.com/ikawaha/kagome-dict v1.0.4
