@@ -18,7 +18,7 @@ import (
 func main() {
 	cm := cron.Map{
 		// daily wordcloud
-		"50 23 * * *": func() {
+		"55 23 * * *": func() {
 			msgs, err := getDailyMessages(time.Now())
 			if err != nil {
 				log.Println("[ERROR]", err)
