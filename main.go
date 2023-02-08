@@ -18,24 +18,15 @@ func main() {
 	// cm := cron.Map{
 	// 	// daily wordcloud
 	// 	"10 0 * * *": func() {
+	today := time.Now().In(config.JST).AddDate(0, 0, -1)
 
-	// 一昨日以前のwordcountを取得
-	today := time.Now().In(config.JST).AddDate(0, 0, -2)
-	toyear := today.Year()
+	msgs, err := getDailyMessages(today)
+	if err != nil {
+		log.Println("[ERROR]", err)
+	}
 
-	for today.Year() == toyear {
-		today = today.AddDate(0, 0, -1)
-
-		msgs, err := getDailyMessages(today)
-		if err != nil {
-			log.Println("[ERROR]", err)
-		}
-
-		if err := postWordcloudToTraq(msgs, today); err != nil {
-			log.Println("[ERROR]", err)
-		}
-
-		log.Printf("Wordcloud for %s posted", today.Format("2006-01-02"))
+	if err := postWordcloudToTraq(msgs, today); err != nil {
+		log.Println("[ERROR]", err)
 	}
 	// 	},
 	// 	// yearly wordcloud
