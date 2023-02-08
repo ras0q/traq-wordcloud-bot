@@ -4,6 +4,8 @@ startup: |
   go mod download
   go build -o main
 
+use_mariadb: true
+
 https: on
 
 entrypoint: './main'
