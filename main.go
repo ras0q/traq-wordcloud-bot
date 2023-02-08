@@ -19,8 +19,8 @@ func main() {
 	// 	// daily wordcloud
 	// 	"10 0 * * *": func() {
 
-	// 一昨日以前のwordcountを取得
-	today := time.Now().In(config.JST).AddDate(0, 0, -2)
+	today, _ := time.Parse("2006-01-02", "2023-01-19")
+	today = today.In(config.JST)
 	toyear := today.Year()
 
 	for today.Year() == toyear {
@@ -36,6 +36,8 @@ func main() {
 		}
 
 		log.Printf("Wordcloud for %s posted", today.Format("2006-01-02"))
+
+		time.Sleep(5 * time.Second)
 	}
 	// 	},
 	// 	// yearly wordcloud
