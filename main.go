@@ -30,7 +30,6 @@ var (
 	dictChannelID       = os.Getenv(dictChannelIDKey)
 	hallOfFameChannelID = os.Getenv(hallOfFameKey)
 	jst                 = time.FixedZone("Asia/Tokyo", 9*60*60)
-	yearlyMsgs          []string
 	db                  *sqlx.DB
 	mysqlConfig         = mysql.Config{
 		User:      os.Getenv("MARIADB_USERNAME"),
@@ -55,13 +54,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	msgs, err := getYearlyMessages(jst)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	yearlyMsgs = msgs
-
 	_db, err := sqlx.Open("mysql", mysqlConfig.FormatDSN())
 	if err != nil {
 		log.Fatal(err)
@@ -84,18 +76,16 @@ func main() {
 				log.Println("[ERROR]", err)
 			}
 
-			yearlyMsgs = append(yearlyMsgs, msgs...)
-			log.Println("[INFO] yearlyMsgs is initialized", len(yearlyMsgs))
-
 			if err := postWordcloudToTraq(msgs, trendChannelID, dictChannelID); err != nil {
 				log.Println("[ERROR]", err)
 			}
 		},
 		// yearly wordcloud
 		"50 23 31 12 *": func() {
-			if err := postWordcloudToTraq(yearlyMsgs, trendChannelID, dictChannelID); err != nil {
-				log.Println("[ERROR]", err)
-			}
+			// TODO: implement
+			// if err := postWordcloudToTraq(yearlyMsgs, trendChannelID, dictChannelID); err != nil {
+			// 	log.Println("[ERROR]", err)
+			// }
 		},
 	}
 
@@ -113,27 +103,6 @@ func getDailyMessages(date time.Time, loc *time.Location) ([]string, error) {
 		time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 99, loc).UTC(),
 		time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, loc).UTC(),
 	)
-}
-
-func getYearlyMessages(loc *time.Location) ([]string, error) {
-	now := time.Now().In(loc)
-	year := now.Year()
-	date := time.Date(year, 1, 1, 0, 0, 0, 0, loc)
-	msgs := make([]string, 0)
-
-	for date.Before(now) {
-		m, err := getDailyMessages(date, loc)
-		if err != nil {
-			return nil, err
-		}
-
-		msgs = append(msgs, m...)
-		date = date.AddDate(0, 0, 1)
-
-		time.Sleep(5 * time.Second)
-	}
-
-	return msgs, nil
 }
 
 func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID string) error {
