@@ -18,13 +18,15 @@ import (
 func main() {
 	cm := cron.Map{
 		// daily wordcloud
-		"58 23 * * *": func() {
-			msgs, err := getDailyMessages(time.Now())
+		"10 0 * * *": func() {
+			today := time.Now().In(config.JST).AddDate(0, 0, -1)
+
+			msgs, err := getDailyMessages(today)
 			if err != nil {
 				log.Println("[ERROR]", err)
 			}
 
-			if err := postWordcloudToTraq(msgs); err != nil {
+			if err := postWordcloudToTraq(msgs, today); err != nil {
 				log.Println("[ERROR]", err)
 			}
 		},
@@ -53,7 +55,7 @@ func getDailyMessages(date time.Time) ([]string, error) {
 	)
 }
 
-func postWordcloudToTraq(msgs []string) error {
+func postWordcloudToTraq(msgs []string, date time.Time) error {
 	voc, err := traqapi.GetWordList(config.DictChannelID)
 	if err != nil {
 		return fmt.Errorf("failed to get vocabulary: %w", err)
@@ -74,7 +76,7 @@ func postWordcloudToTraq(msgs []string) error {
 		return fmt.Errorf("failed to convert messages to word count map: %w", err)
 	}
 
-	if err := db.InsertWordCounts(wordCountMap, time.Now().In(config.JST).Format("2006/01/02")); err != nil {
+	if err := db.InsertWordCounts(wordCountMap, date.Format("2006/01/02")); err != nil {
 		return fmt.Errorf("failed to insert word counts: %w", err)
 	}
 
@@ -96,7 +98,7 @@ func postWordcloudToTraq(msgs []string) error {
 
 	if err := traqapi.PostMessage(
 		config.TrendChannelID,
-		generateMessageContent(wordCountMap, fileID),
+		generateMessageContent(wordCountMap, fileID, date),
 		true,
 	); err != nil {
 		return fmt.Errorf("Error posting wordcloud: %w", err)
@@ -105,7 +107,7 @@ func postWordcloudToTraq(msgs []string) error {
 	return nil
 }
 
-func generateMessageContent(wordMap map[string]int, fileID string) string {
+func generateMessageContent(wordMap map[string]int, fileID string, date time.Time) string {
 	type kv struct {
 		key   string
 		value int
@@ -120,18 +122,13 @@ func generateMessageContent(wordMap map[string]int, fileID string) string {
 		return ss[i].value > ss[j].value
 	})
 
-	jstToday := time.
-		Now().
-		In(config.JST).
-		Format("2006/01/02")
-
 	return fmt.Sprintf(
 		"Daily Wordcloud (%s) やんね！\n"+
 			":first_place: %s: %d回\n"+
 			":second_place: %s: %d回\n"+
 			":third_place: %s: %d回\n"+
 			"https://q.trap.jp/files/%s\n",
-		jstToday,
+		date.Format("2006/01/02"),
 		ss[0].key, ss[0].value,
 		ss[1].key, ss[1].value,
 		ss[2].key, ss[2].value,
