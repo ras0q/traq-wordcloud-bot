@@ -18,8 +18,7 @@ func main() {
 	// cm := cron.Map{
 	// 	// daily wordcloud
 	// 	"10 0 * * *": func() {
-	today, _ := time.Parse("2006/01/02", "2023/01/19")
-	today = today.In(config.JST)
+	today := time.Now().In(config.JST).AddDate(0, 0, -1)
 
 	msgs, err := getDailyMessages(today)
 	if err != nil {
