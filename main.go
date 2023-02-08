@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"runtime"
 	"sort"
 	"time"
 
@@ -41,7 +42,7 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 
-	// runtime.Goexit()
+	runtime.Goexit()
 }
 
 func getDailyMessages(date time.Time) ([]string, error) {
