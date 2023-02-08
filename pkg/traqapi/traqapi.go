@@ -13,21 +13,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ras0q/traq-wordcloud-bot/pkg/config"
 	"github.com/traPtitech/go-traq"
 	"golang.org/x/sync/errgroup"
 )
 
 var (
-	cli  *traq.APIClient
-	auth context.Context
+	cli  = traq.NewAPIClient(traq.NewConfiguration())
+	auth = context.WithValue(context.Background(), traq.ContextAccessToken, config.AccessToken)
 )
-
-func Setup(accessToken string) error {
-	cli = traq.NewAPIClient(traq.NewConfiguration())
-	auth = context.WithValue(context.Background(), traq.ContextAccessToken, accessToken)
-
-	return nil
-}
 
 func GetMessages(before, after time.Time) ([]string, error) {
 	var (

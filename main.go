@@ -3,44 +3,16 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"runtime"
 	"sort"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	"github.com/ras0q/traq-wordcloud-bot/pkg/config"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/converter"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/cron"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/traqapi"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/wordcloud"
-)
-
-const (
-	accessTokenKey    = "TRAQ_ACCESS_TOKEN"
-	trendChannelIDKey = "TRAQ_TREND_CHANNEL_ID"
-	dictChannelIDKey  = "TRAQ_DICT_CHANNEL_ID"
-	hallOfFameKey     = "TRAQ_HALL_OF_FAME_CHANNEL_ID"
-	imageName         = "wordcloud.png"
-)
-
-var (
-	accessToken         = os.Getenv(accessTokenKey)
-	trendChannelID      = os.Getenv(trendChannelIDKey)
-	dictChannelID       = os.Getenv(dictChannelIDKey)
-	hallOfFameChannelID = os.Getenv(hallOfFameKey)
-	jst                 = time.FixedZone("Asia/Tokyo", 9*60*60)
-	db                  *sqlx.DB
-	mysqlConfig         = mysql.Config{
-		User:      os.Getenv("MARIADB_USERNAME"),
-		Passwd:    os.Getenv("MARIADB_PASSWORD"),
-		Net:       "tcp",
-		Addr:      fmt.Sprintf("%s:%d", os.Getenv("MARIADB_HOST"), 3306),
-		DBName:    os.Getenv("MARIADB_DATABASE"),
-		Collation: "utf8mb4_unicode_ci",
-		Loc:       jst,
-		ParseTime: true,
-	}
 )
 
 type WordCount struct {
@@ -49,12 +21,10 @@ type WordCount struct {
 	Date  time.Time `db:"date"`
 }
 
-func main() {
-	if err := traqapi.Setup(accessToken); err != nil {
-		log.Fatal(err)
-	}
+var db *sqlx.DB
 
-	_db, err := sqlx.Open("mysql", mysqlConfig.FormatDSN())
+func main() {
+	_db, err := sqlx.Open("mysql", config.Mysql.FormatDSN())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,12 +41,12 @@ func main() {
 	cm := cron.Map{
 		// daily wordcloud
 		"50 23 * * *": func() {
-			msgs, err := getDailyMessages(time.Now().In(jst), jst)
+			msgs, err := getDailyMessages(time.Now().In(config.JST), config.JST)
 			if err != nil {
 				log.Println("[ERROR]", err)
 			}
 
-			if err := postWordcloudToTraq(msgs, trendChannelID, dictChannelID); err != nil {
+			if err := postWordcloudToTraq(msgs, config.TrendChannelID, config.DictChannelID); err != nil {
 				log.Println("[ERROR]", err)
 			}
 		},
@@ -89,7 +59,7 @@ func main() {
 		},
 	}
 
-	if err := cron.Setup(cm, jst); err != nil {
+	if err := cron.Setup(cm, config.JST); err != nil {
 		log.Fatal(err)
 	}
 
@@ -116,7 +86,7 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 		return fmt.Errorf("failed to make user dictionary: %w", err)
 	}
 
-	hof, err := traqapi.GetWordList(hallOfFameChannelID)
+	hof, err := traqapi.GetWordList(config.HallOfFameChannelID)
 	if err != nil {
 		return fmt.Errorf("failed to get hall of fame: %w", err)
 	}
@@ -126,7 +96,7 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 		return fmt.Errorf("failed to convert messages to word count map: %w", err)
 	}
 
-	today := time.Now().In(jst) // TODO: グローバルにする
+	today := time.Now().In(config.JST) // TODO: グローバルにする
 
 	wordCounts := make([]*WordCount, 0, len(wordCountMap))
 	for word, count := range wordCountMap {
@@ -151,13 +121,13 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 		return fmt.Errorf("Error generating wordcloud: %w", err)
 	}
 
-	file, err := converter.Image2File(img, imageName)
+	file, err := converter.Image2File(img, "wordcloud.png")
 	if err != nil {
 		return fmt.Errorf("Error converting image to file: %w", err)
 	}
 	defer file.Close()
 
-	fileID, err := traqapi.PostFile(accessToken, trendChannelID, file)
+	fileID, err := traqapi.PostFile(config.AccessToken, trendChannelID, file)
 	if err != nil {
 		return fmt.Errorf("Error posting file: %w", err)
 	}
@@ -190,7 +160,7 @@ func generateMessageContent(wordMap map[string]int, fileID string) string {
 
 	jstToday := time.
 		Now().
-		In(jst).
+		In(config.JST).
 		Format("2006/01/02")
 
 	return fmt.Sprintf(
