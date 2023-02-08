@@ -79,29 +79,29 @@ func postWordcloudToTraq(msgs []string, date time.Time) error {
 		return fmt.Errorf("failed to insert word counts: %w", err)
 	}
 
-	// img, err := wordcloud.GenerateWordcloud(wordCountMap)
-	// if err != nil {
-	// 	return fmt.Errorf("Error generating wordcloud: %w", err)
-	// }
+	img, err := wordcloud.GenerateWordcloud(wordCountMap)
+	if err != nil {
+		return fmt.Errorf("Error generating wordcloud: %w", err)
+	}
 
-	// file, err := converter.Image2File(img, "wordcloud.png")
-	// if err != nil {
-	// 	return fmt.Errorf("Error converting image to file: %w", err)
-	// }
-	// defer file.Close()
+	file, err := converter.Image2File(img, "wordcloud.png")
+	if err != nil {
+		return fmt.Errorf("Error converting image to file: %w", err)
+	}
+	defer file.Close()
 
-	// fileID, err := traqapi.PostFile(config.TrendChannelID, file)
-	// if err != nil {
-	// 	return fmt.Errorf("Error posting file: %w", err)
-	// }
+	fileID, err := traqapi.PostFile(config.TrendChannelID, file)
+	if err != nil {
+		return fmt.Errorf("Error posting file: %w", err)
+	}
 
-	// if err := traqapi.PostMessage(
-	// 	config.TrendChannelID,
-	// 	generateMessageContent(wordCountMap, fileID, date),
-	// 	true,
-	// ); err != nil {
-	// 	return fmt.Errorf("Error posting wordcloud: %w", err)
-	// }
+	if err := traqapi.PostMessage(
+		config.TrendChannelID,
+		generateMessageContent(wordCountMap, fileID, date),
+		true,
+	); err != nil {
+		return fmt.Errorf("Error posting wordcloud: %w", err)
+	}
 
 	return nil
 }
