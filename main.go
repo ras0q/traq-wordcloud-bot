@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
-	"image"
-	"image/png"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"time"
@@ -132,7 +129,7 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 		return fmt.Errorf("Error generating wordcloud: %w", err)
 	}
 
-	file, err := imageToFile(img, imageName)
+	file, err := converter.Image2File(img, imageName)
 	if err != nil {
 		return fmt.Errorf("Error converting image to file: %w", err)
 	}
@@ -152,23 +149,6 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 	}
 
 	return nil
-}
-
-func imageToFile(img image.Image, path string) (*os.File, error) {
-	p, _ := filepath.Abs(path)
-
-	f, err := os.Create(p)
-	if err != nil {
-		return nil, fmt.Errorf("Error creating wordcloud file: %w", err)
-	}
-
-	if err := png.Encode(f, img); err != nil {
-		return nil, fmt.Errorf("Error encoding wordcloud: %w", err)
-	}
-
-	_, _ = f.Seek(0, os.SEEK_SET)
-
-	return f, nil
 }
 
 func generateMessageContent(wordMap map[string]int, fileID string) string {
