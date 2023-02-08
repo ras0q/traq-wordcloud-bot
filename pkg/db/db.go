@@ -26,7 +26,7 @@ func init() {
 
 	if _, err := global.Exec(
 		"CREATE TABLE IF NOT EXISTS word_count " +
-			"(word VARCHAR(255) NOT NULL, count INT NOT NULL, date CHAR(10) NOT NULL, PRIMARY KEY (word, date))",
+			"(word VARCHAR(255) NOT NULL, count INT NOT NULL, date CHAR(10) NOT NULL)",
 	); err != nil {
 		log.Fatal(err)
 	}
