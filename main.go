@@ -18,8 +18,8 @@ import (
 func main() {
 	cm := cron.Map{
 		// daily wordcloud
-		"10 0 * * *": func() {
-			today := time.Now().In(config.JST).AddDate(0, 0, -1)
+		"50 23 * * *": func() {
+			today := time.Now().In(config.JST)
 
 			msgs, err := getDailyMessages(today)
 			if err != nil {
