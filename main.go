@@ -8,6 +8,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/converter"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/cron"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/traqapi"
@@ -29,7 +31,24 @@ var (
 	hallOfFameChannelID = os.Getenv(hallOfFameKey)
 	jst                 = time.FixedZone("Asia/Tokyo", 9*60*60)
 	yearlyMsgs          []string
+	db                  *sqlx.DB
+	mysqlConfig         = mysql.Config{
+		User:      os.Getenv("MARIADB_USERNAME"),
+		Passwd:    os.Getenv("MARIADB_PASSWORD"),
+		Net:       "tcp",
+		Addr:      fmt.Sprintf("%s:%d", os.Getenv("MARIADB_HOST"), 3306),
+		DBName:    os.Getenv("MARIADB_DATABASE"),
+		Collation: "utf8mb4_unicode_ci",
+		Loc:       jst,
+		ParseTime: true,
+	}
 )
+
+type WordCount struct {
+	Word  string    `db:"word"`
+	Count int       `db:"count"`
+	Date  time.Time `db:"date"`
+}
 
 func main() {
 	if err := traqapi.Setup(accessToken); err != nil {
@@ -42,6 +61,20 @@ func main() {
 	}
 
 	yearlyMsgs = msgs
+
+	_db, err := sqlx.Open("mysql", mysqlConfig.FormatDSN())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	db = _db
+
+	if _, err := db.Exec(
+		"CREATE TABLE IF NOT EXISTS word_count " +
+			"(word VARCHAR(255) NOT NULL, count INT NOT NULL, date DATETIME NOT NULL, PRIMARY KEY (word, date))",
+	); err != nil {
+		log.Fatal(err)
+	}
 
 	cm := cron.Map{
 		// daily wordcloud
@@ -122,6 +155,26 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 	wordCountMap, err := converter.Messages2WordCountMap(msgs, udic, hof)
 	if err != nil {
 		return fmt.Errorf("failed to convert messages to word count map: %w", err)
+	}
+
+	today := time.Now().In(jst) // TODO: グローバルにする
+
+	wordCounts := make([]*WordCount, 0, len(wordCountMap))
+	for word, count := range wordCountMap {
+		wordCounts = append(wordCounts, &WordCount{
+			Word:  word,
+			Count: count,
+			Date:  today,
+		})
+	}
+
+	if _, err := db.NamedExec(
+		"INSERT INTO word_counts (word, count, date) "+
+			"VALUES (:word, :count, :date) "+
+			"ON DUPLICATE KEY UPDATE count = :count",
+		wordCounts,
+	); err != nil {
+		return fmt.Errorf("Error inserting word counts: %w", err)
 	}
 
 	img, err := wordcloud.GenerateWordcloud(wordCountMap)
