@@ -15,12 +15,6 @@ import (
 	"github.com/ras0q/traq-wordcloud-bot/pkg/wordcloud"
 )
 
-type WordCount struct {
-	Word  string    `db:"word"`
-	Count int       `db:"count"`
-	Date  time.Time `db:"date"`
-}
-
 func main() {
 	cm := cron.Map{
 		// daily wordcloud
@@ -80,24 +74,8 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 		return fmt.Errorf("failed to convert messages to word count map: %w", err)
 	}
 
-	today := time.Now().In(config.JST) // TODO: グローバルにする
-
-	wordCounts := make([]*WordCount, 0, len(wordCountMap))
-	for word, count := range wordCountMap {
-		wordCounts = append(wordCounts, &WordCount{
-			Word:  word,
-			Count: count,
-			Date:  today,
-		})
-	}
-
-	if _, err := db.Global.NamedExec(
-		"INSERT INTO word_counts (word, count, date) "+
-			"VALUES (:word, :count, :date) "+
-			"ON DUPLICATE KEY UPDATE count = :count",
-		wordCounts,
-	); err != nil {
-		return fmt.Errorf("Error inserting word counts: %w", err)
+	if err := db.InsertWordCounts(wordCountMap, time.Now().In(config.JST).Format("2006/01/02")); err != nil {
+		return fmt.Errorf("failed to insert word counts: %w", err)
 	}
 
 	img, err := wordcloud.GenerateWordcloud(wordCountMap)
