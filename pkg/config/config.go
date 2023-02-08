@@ -18,7 +18,7 @@ var (
 		User:      os.Getenv("MARIADB_USERNAME"),
 		Passwd:    os.Getenv("MARIADB_PASSWORD"),
 		Net:       "tcp",
-		Addr:      fmt.Sprintf("%s:%d", os.Getenv("MARIADB_HOST"), 3306),
+		Addr:      fmt.Sprintf("%s:%s", os.Getenv("MARIADB_HOSTNAME"), os.Getenv("MARIADB_PORT")),
 		DBName:    os.Getenv("MARIADB_DATABASE"),
 		Collation: "utf8mb4_unicode_ci",
 		Loc:       JST,
