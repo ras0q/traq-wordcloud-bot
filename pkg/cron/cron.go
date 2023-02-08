@@ -2,16 +2,16 @@ package cron
 
 import (
 	"fmt"
-	"time"
 
+	"github.com/ras0q/traq-wordcloud-bot/pkg/config"
 	"github.com/robfig/cron/v3"
 )
 
 type Map map[string]func()
 
-func Setup(cm Map, loc *time.Location) error {
+func Setup(cm Map) error {
 	c := cron.New(
-		cron.WithLocation(loc),
+		cron.WithLocation(config.JST),
 		cron.WithChain(cron.Recover(cron.DefaultLogger)),
 	)
 

@@ -19,12 +19,12 @@ func main() {
 	cm := cron.Map{
 		// daily wordcloud
 		"50 23 * * *": func() {
-			msgs, err := getDailyMessages(time.Now().In(config.JST), config.JST)
+			msgs, err := getDailyMessages(time.Now())
 			if err != nil {
 				log.Println("[ERROR]", err)
 			}
 
-			if err := postWordcloudToTraq(msgs, config.TrendChannelID, config.DictChannelID); err != nil {
+			if err := postWordcloudToTraq(msgs); err != nil {
 				log.Println("[ERROR]", err)
 			}
 		},
@@ -37,24 +37,24 @@ func main() {
 		},
 	}
 
-	if err := cron.Setup(cm, config.JST); err != nil {
+	if err := cron.Setup(cm); err != nil {
 		log.Fatal(err)
 	}
 
 	runtime.Goexit()
 }
 
-func getDailyMessages(date time.Time, loc *time.Location) ([]string, error) {
-	date = date.In(loc)
+func getDailyMessages(date time.Time) ([]string, error) {
+	date = date.In(config.JST)
 
 	return traqapi.GetMessages(
-		time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 99, loc).UTC(),
-		time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, loc).UTC(),
+		time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 99, config.JST).UTC(),
+		time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, config.JST).UTC(),
 	)
 }
 
-func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID string) error {
-	voc, err := traqapi.GetWordList(dictChannelID)
+func postWordcloudToTraq(msgs []string) error {
+	voc, err := traqapi.GetWordList(config.DictChannelID)
 	if err != nil {
 		return fmt.Errorf("failed to get vocabulary: %w", err)
 	}
@@ -89,13 +89,13 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 	}
 	defer file.Close()
 
-	fileID, err := traqapi.PostFile(config.AccessToken, trendChannelID, file)
+	fileID, err := traqapi.PostFile(config.TrendChannelID, file)
 	if err != nil {
 		return fmt.Errorf("Error posting file: %w", err)
 	}
 
 	if err := traqapi.PostMessage(
-		trendChannelID,
+		config.TrendChannelID,
 		generateMessageContent(wordCountMap, fileID),
 		true,
 	); err != nil {

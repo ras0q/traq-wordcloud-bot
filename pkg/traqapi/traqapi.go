@@ -83,7 +83,7 @@ func GetMessages(before, after time.Time) ([]string, error) {
 	return msgs, nil
 }
 
-func PostFile(accessToken string, channelID string, file *os.File) (string, error) {
+func PostFile(channelID string, file *os.File) (string, error) {
 	// NOTE: go-traqがcontent-typeをapplication/octet-streamにしてしまうので自前でAPIを叩く
 	// Ref: https://github.com/traPtitech/go-traq/blob/2c7a5f9aa48ef67a6bd6daf4018ca2dabbbbb2f3/client.go#L304
 	var b bytes.Buffer
@@ -115,7 +115,7 @@ func PostFile(accessToken string, channelID string, file *os.File) (string, erro
 	}
 
 	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Authorization", "Bearer "+config.AccessToken)
 
 	client := new(http.Client)
 
