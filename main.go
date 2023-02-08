@@ -9,38 +9,39 @@ import (
 
 	"github.com/ras0q/traq-wordcloud-bot/pkg/config"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/converter"
+	"github.com/ras0q/traq-wordcloud-bot/pkg/cron"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/db"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/traqapi"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/wordcloud"
 )
 
 func main() {
-	// cm := cron.Map{
-	// 	// daily wordcloud
-	// 	"10 0 * * *": func() {
-	today := time.Now().In(config.JST).AddDate(0, 0, -1)
+	cm := cron.Map{
+		// daily wordcloud
+		"10 0 * * *": func() {
+			today := time.Now().In(config.JST).AddDate(0, 0, -1)
 
-	msgs, err := getDailyMessages(today)
-	if err != nil {
-		log.Println("[ERROR]", err)
+			msgs, err := getDailyMessages(today)
+			if err != nil {
+				log.Println("[ERROR]", err)
+			}
+
+			if err := postWordcloudToTraq(msgs, today); err != nil {
+				log.Println("[ERROR]", err)
+			}
+		},
+		// yearly wordcloud
+		"50 23 31 12 *": func() {
+			// TODO: implement
+			// if err := postWordcloudToTraq(yearlyMsgs, trendChannelID, dictChannelID); err != nil {
+			// 	log.Println("[ERROR]", err)
+			// }
+		},
 	}
 
-	if err := postWordcloudToTraq(msgs, today); err != nil {
-		log.Println("[ERROR]", err)
+	if err := cron.Setup(cm); err != nil {
+		log.Fatal(err)
 	}
-	// 	},
-	// 	// yearly wordcloud
-	// 	"50 23 31 12 *": func() {
-	// 		// TODO: implement
-	// 		// if err := postWordcloudToTraq(yearlyMsgs, trendChannelID, dictChannelID); err != nil {
-	// 		// 	log.Println("[ERROR]", err)
-	// 		// }
-	// 	},
-	// }
-
-	// if err := cron.Setup(cm); err != nil {
-	// 	log.Fatal(err)
-	// }
 
 	runtime.Goexit()
 }
