@@ -11,6 +11,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/ras0q/traq-wordcloud-bot/pkg/converter"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/cron"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/traqapi"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/wordcloud"
@@ -121,7 +122,12 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 		return fmt.Errorf("failed to get hall of fame: %w", err)
 	}
 
-	wordMap, img, err := wordcloud.GenerateWordcloud(msgs, udic, hof)
+	wordCountMap, err := converter.Messages2WordCountMap(msgs, udic, hof)
+	if err != nil {
+		return fmt.Errorf("failed to convert messages to word count map: %w", err)
+	}
+
+	img, err := wordcloud.GenerateWordcloud(wordCountMap)
 	if err != nil {
 		return fmt.Errorf("Error generating wordcloud: %w", err)
 	}
@@ -139,7 +145,7 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 
 	if err := traqapi.PostMessage(
 		trendChannelID,
-		generateMessageContent(wordMap, fileID),
+		generateMessageContent(wordCountMap, fileID),
 		true,
 	); err != nil {
 		return fmt.Errorf("Error posting wordcloud: %w", err)
