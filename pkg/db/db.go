@@ -44,8 +44,7 @@ func InsertWordCounts(wordCountMap map[string]int, dateStr string) error {
 
 	if _, err := global.NamedExec(
 		"INSERT INTO word_counts (word, count, date) "+
-			"VALUES (:word, :count, :date) "+
-			"ON DUPLICATE KEY UPDATE count = :count",
+			"VALUES (:word, :count, :date)",
 		wordCounts,
 	); err != nil {
 		return fmt.Errorf("Error inserting word counts: %w", err)
