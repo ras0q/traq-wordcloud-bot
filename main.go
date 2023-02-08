@@ -7,10 +7,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/config"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/converter"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/cron"
+	"github.com/ras0q/traq-wordcloud-bot/pkg/db"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/traqapi"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/wordcloud"
 )
@@ -21,23 +21,7 @@ type WordCount struct {
 	Date  time.Time `db:"date"`
 }
 
-var db *sqlx.DB
-
 func main() {
-	_db, err := sqlx.Open("mysql", config.Mysql.FormatDSN())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	db = _db
-
-	if _, err := db.Exec(
-		"CREATE TABLE IF NOT EXISTS word_count " +
-			"(word VARCHAR(255) NOT NULL, count INT NOT NULL, date DATETIME NOT NULL, PRIMARY KEY (word, date))",
-	); err != nil {
-		log.Fatal(err)
-	}
-
 	cm := cron.Map{
 		// daily wordcloud
 		"50 23 * * *": func() {
@@ -107,7 +91,7 @@ func postWordcloudToTraq(msgs []string, trendChannelID string, dictChannelID str
 		})
 	}
 
-	if _, err := db.NamedExec(
+	if _, err := db.Global.NamedExec(
 		"INSERT INTO word_counts (word, count, date) "+
 			"VALUES (:word, :count, :date) "+
 			"ON DUPLICATE KEY UPDATE count = :count",
