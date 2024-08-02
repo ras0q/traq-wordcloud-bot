@@ -7,33 +7,9 @@ import (
 
 	"github.com/ikawaha/kagome-dict/dict"
 	"github.com/ikawaha/kagome-dict/ipa"
+	"github.com/ikawaha/kagome/v2/filter"
 	"github.com/ikawaha/kagome/v2/tokenizer"
 )
-
-// wordcloudに含めない単語
-// TODO: DBで管理する
-var exclusiveWords = []string{
-	"人",
-	"感じ",
-	"あと",
-	"ー",
-}
-
-func isExclusiveWord(word string, hof map[string]struct{}) bool {
-	for _, w := range exclusiveWords {
-		if strings.EqualFold(w, word) {
-			return true
-		}
-	}
-
-	for w := range hof {
-		if strings.EqualFold(w, word) {
-			return true
-		}
-	}
-
-	return false
-}
 
 func Messages2WordCountMap(msgs []string, udic *dict.UserDict, hof map[string]struct{}) (map[string]int, error) {
 	t, err := tokenizer.New(ipa.DictShrink(), tokenizer.UserDict(udic), tokenizer.OmitBosEos())
@@ -44,19 +20,27 @@ func Messages2WordCountMap(msgs []string, udic *dict.UserDict, hof map[string]st
 	wordMap := make(map[string]int)
 	r := regexp.MustCompile(`!\{.+\}|https?:\/\/.+(\s|$)`)
 
+	var (
+		nounFilter           = filter.NewPOSFilter(filter.POS{"名詞", "カスタム名詞"})
+		exclusiveWordsFilter = filter.NewWordFilter([]string{"人", "感じ", "あと", "ー"})
+	)
 	for _, msg := range msgs {
 		msg := r.ReplaceAllString(msg, "")
 		wm := make(map[string]struct{})
 
 		tokens := t.Tokenize(msg)
-		for _, token := range tokens {
-			fea := token.Features()
-			sur := strings.ToLower(token.Surface)
+		nounFilter.Keep(&tokens)
+		exclusiveWordsFilter.Drop(&tokens)
 
-			if (fea[0] == "名詞" && fea[1] == "一般" || fea[0] == "カスタム名詞") && len(sur) > 1 {
-				if _, found := wm[sur]; !found && !isExclusiveWord(sur, hof) {
-					wm[sur] = struct{}{}
-				}
+		for _, token := range tokens {
+			fea, ok := token.FeatureAt(1)
+			if !ok || fea != "一般" {
+				continue
+			}
+
+			sur := strings.ToLower(token.Surface)
+			if _, found := wm[sur]; !found {
+				wm[sur] = struct{}{}
 			}
 		}
 
