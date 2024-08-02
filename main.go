@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"runtime"
@@ -15,6 +16,33 @@ import (
 )
 
 func main() {
+	var (
+		runOnce bool
+		runDate string
+	)
+	flag.BoolVar(&runOnce, "once", false, "Run only once, not periodically")
+	flag.StringVar(&runDate, "date", time.Now().In(config.JST).Format(time.DateOnly), "Wordcloud date")
+	flag.Parse()
+
+	if runOnce {
+		log.Println("Run once for", runDate)
+		date, err := time.Parse(time.DateOnly, runDate)
+		if err != nil {
+			panic(err)
+		}
+
+		msgs, err := getDailyMessages(date)
+		if err != nil {
+			panic(err)
+		}
+
+		if err := postWordcloudToTraq(msgs, date); err != nil {
+			panic(err)
+		}
+
+		return
+	}
+
 	cm := cron.Map{
 		// daily wordcloud
 		"50 23 * * *": func() {
