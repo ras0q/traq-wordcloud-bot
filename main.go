@@ -10,7 +10,6 @@ import (
 	"github.com/ras0q/traq-wordcloud-bot/pkg/config"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/converter"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/cron"
-	"github.com/ras0q/traq-wordcloud-bot/pkg/db"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/traqapi"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/wordcloud"
 )
@@ -76,9 +75,10 @@ func postWordcloudToTraq(msgs []string, date time.Time) error {
 		return fmt.Errorf("failed to convert messages to word count map: %w", err)
 	}
 
-	if err := db.InsertWordCounts(wordCountMap, date.Format("2006/01/02")); err != nil {
-		return fmt.Errorf("failed to insert word counts: %w", err)
-	}
+	// TODO: yearly wordcloudの実装時に戻す
+	// if err := db.InsertWordCounts(wordCountMap, date.Format("2006/01/02")); err != nil {
+	// 	return fmt.Errorf("failed to insert word counts: %w", err)
+	// }
 
 	img, err := wordcloud.GenerateWordcloud(wordCountMap)
 	if err != nil {
