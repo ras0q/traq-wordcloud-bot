@@ -27,17 +27,19 @@ func main() {
 	flag.Parse()
 
 	if runOnce {
-		log.Println("Run once for", runDate)
+		log.Println("Run for", runDate)
 		date, err := time.Parse(time.DateOnly, runDate)
 		if err != nil {
 			panic(err)
 		}
 
+		log.Println("getDailyMessages")
 		msgs, err := getDailyMessages(date)
 		if err != nil {
 			panic(err)
 		}
 
+		log.Println("postWordcloudToTraq", len(msgs))
 		if err := postWordcloudToTraq(msgs, date); err != nil {
 			panic(err)
 		}
