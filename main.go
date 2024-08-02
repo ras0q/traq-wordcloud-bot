@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"time"
@@ -113,7 +115,7 @@ func postWordcloudToTraq(msgs []string, date time.Time) error {
 		return fmt.Errorf("Error generating wordcloud: %w", err)
 	}
 
-	file, err := converter.Image2File(img, "wordcloud.png")
+	file, err := converter.Image2File(img, filepath.Join(os.TempDir(), "wordcloud.png"))
 	if err != nil {
 		return fmt.Errorf("Error converting image to file: %w", err)
 	}
