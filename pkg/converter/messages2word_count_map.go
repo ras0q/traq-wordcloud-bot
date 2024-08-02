@@ -36,7 +36,7 @@ func isExclusiveWord(word string, hof map[string]struct{}) bool {
 }
 
 func Messages2WordCountMap(msgs []string, udic *dict.UserDict, hof map[string]struct{}) (map[string]int, error) {
-	t, err := tokenizer.New(ipa.Dict(), tokenizer.UserDict(udic), tokenizer.OmitBosEos())
+	t, err := tokenizer.New(ipa.DictShrink(), tokenizer.UserDict(udic), tokenizer.OmitBosEos())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokenizer: %w", err)
 	}
