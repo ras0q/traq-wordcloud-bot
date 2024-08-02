@@ -21,7 +21,7 @@ func main() {
 		runDate string
 	)
 	flag.BoolVar(&runOnce, "once", false, "Run only once, not periodically")
-	flag.String(&runDate, "date", time.Now().In(config.JST).Format(time.DateOnly), "Wordcloud date")
+	flag.StringVar(&runDate, "date", time.Now().In(config.JST).Format(time.DateOnly), "Wordcloud date")
 	flag.Parse()
 
 	if runOnce {
