@@ -47,9 +47,9 @@ func GenerateWordcloud(wordCountMap map[string]int) (image.Image, error) {
 	wc := wordclouds.NewWordcloud(
 		wordCountMap,
 		wordclouds.FontFile("assets/fonts/rounded-l-mplus-2c-medium.ttf"),
-		wordclouds.Height(1024),
-		wordclouds.Width(1024),
-		wordclouds.FontMaxSize(128),
+		wordclouds.Height(512),
+		wordclouds.Width(512),
+		wordclouds.FontMaxSize(64),
 		wordclouds.FontMinSize(8),
 		wordclouds.Colors([]color.Color{
 			color.RGBA{247, 144, 30, 255},
