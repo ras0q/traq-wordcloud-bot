@@ -71,7 +71,7 @@ func run(date time.Time) error {
 	slog.Debug("getDailyMessages", slog.Time("date", date))
 	msgs, err := getDailyMessages(date)
 	if err != nil {
-		return fmt.Errorf("getDailyMessages")
+		return err
 	}
 
 	slog.Debug("getUserDictionary")

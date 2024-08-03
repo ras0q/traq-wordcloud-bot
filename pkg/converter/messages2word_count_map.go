@@ -21,7 +21,10 @@ func Messages2WordCountMap(msgs []string, udic *dict.UserDict, hof []string) (ma
 	r := regexp.MustCompile(`!\{.+\}|https?:\/\/.+(\s|$)`)
 
 	var (
-		nounFilter           = filter.NewPOSFilter(filter.POS{"名詞", "カスタム名詞"})
+		nounFilter = filter.NewPOSFilter([]filter.POS{
+			{"名詞", "一般"},
+			{"カスタム名詞"},
+		}...)
 		exclusiveWordsFilter = filter.NewWordFilter(append(hof, "人", "感じ", "あと", "ー"))
 	)
 	for _, msg := range msgs {
@@ -33,11 +36,6 @@ func Messages2WordCountMap(msgs []string, udic *dict.UserDict, hof []string) (ma
 		exclusiveWordsFilter.Drop(&tokens)
 
 		for _, token := range tokens {
-			fea, ok := token.FeatureAt(1)
-			if !ok || fea != "一般" {
-				continue
-			}
-
 			sur := strings.ToLower(token.Surface)
 			if _, found := wm[sur]; !found {
 				wm[sur] = struct{}{}
