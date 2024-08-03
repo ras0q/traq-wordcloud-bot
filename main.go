@@ -4,12 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"time"
 
+	"github.com/ikawaha/kagome-dict/dict"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/config"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/converter"
 	"github.com/ras0q/traq-wordcloud-bot/pkg/cron"
@@ -27,20 +29,14 @@ func main() {
 	flag.Parse()
 
 	if runOnce {
-		log.Println("Run for", runDate)
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+
 		date, err := time.Parse(time.DateOnly, runDate)
 		if err != nil {
 			panic(err)
 		}
 
-		log.Println("getDailyMessages")
-		msgs, err := getDailyMessages(date)
-		if err != nil {
-			panic(err)
-		}
-
-		log.Println("postWordcloudToTraq", len(msgs))
-		if err := postWordcloudToTraq(msgs, date); err != nil {
+		if err := run(date); err != nil {
 			panic(err)
 		}
 
@@ -51,14 +47,8 @@ func main() {
 		// daily wordcloud
 		"50 23 * * *": func() {
 			today := time.Now().In(config.JST)
-
-			msgs, err := getDailyMessages(today)
-			if err != nil {
-				log.Println("[ERROR]", err)
-			}
-
-			if err := postWordcloudToTraq(msgs, today); err != nil {
-				log.Println("[ERROR]", err)
+			if err := run(today); err != nil {
+				slog.Error("run error: "+err.Error(), slog.Time("date", today))
 			}
 		},
 		// yearly wordcloud
@@ -77,6 +67,67 @@ func main() {
 	runtime.Goexit()
 }
 
+func run(date time.Time) error {
+	slog.Debug("getDailyMessages", slog.Time("date", date))
+	msgs, err := getDailyMessages(date)
+	if err != nil {
+		return fmt.Errorf("getDailyMessages")
+	}
+
+	slog.Debug("getUserDictionary")
+	udic, err := getUserDictionary()
+	if err != nil {
+		return err
+	}
+
+	slog.Debug("getHallOfFameWords")
+	hof, err := getHallOfFameWords()
+	if err != nil {
+		return err
+	}
+
+	slog.Debug("converter.Messages2WordCountMap",
+		slog.Int("msgs", len(msgs)),
+		slog.Int("udic", len(udic.Contents)),
+		slog.Int("hof", len(hof)),
+	)
+	wordCountMap, err := converter.Messages2WordCountMap(msgs, udic, hof)
+	if err != nil {
+		return err
+	}
+
+	slog.Debug("wordcloud.GenerateWordcloud", slog.Int("wordCountMap", len(wordCountMap)))
+	img, err := wordcloud.GenerateWordcloud(wordCountMap)
+	if err != nil {
+		return fmt.Errorf("Error generating wordcloud: %w", err)
+	}
+
+	slog.Debug("converter.Image2File")
+	file, err := converter.Image2File(img, filepath.Join(os.TempDir(), "wordcloud.png"))
+	if err != nil {
+		return fmt.Errorf("Error converting image to file: %w", err)
+	}
+	defer file.Close()
+
+	slog.Debug("traqapi.PostFile", slog.String("filename", file.Name()))
+	fileID, err := traqapi.PostFile(config.TrendChannelID, file)
+	if err != nil {
+		return fmt.Errorf("Error posting file: %w", err)
+	}
+
+	slog.Debug("traqapi.PostMessage")
+	if err := traqapi.PostMessage(
+		config.TrendChannelID,
+		generateMessageContent(wordCountMap, fileID, date),
+		true,
+	); err != nil {
+		return fmt.Errorf("Error posting wordcloud: %w", err)
+	}
+
+	slog.Debug("Success!")
+	return nil
+}
+
 func getDailyMessages(date time.Time) ([]string, error) {
 	date = date.In(config.JST)
 
@@ -86,57 +137,32 @@ func getDailyMessages(date time.Time) ([]string, error) {
 	)
 }
 
-func postWordcloudToTraq(msgs []string, date time.Time) error {
+func getUserDictionary() (*dict.UserDict, error) {
 	voc, err := traqapi.GetWordList(config.DictChannelID)
 	if err != nil {
-		return fmt.Errorf("failed to get vocabulary: %w", err)
+		return nil, fmt.Errorf("failed to get vocabulary: %w", err)
 	}
 
 	udic, err := wordcloud.MakeUserDict(voc)
 	if err != nil {
-		return fmt.Errorf("failed to make user dictionary: %w", err)
+		return nil, fmt.Errorf("failed to make user dictionary: %w", err)
 	}
 
-	hof, err := traqapi.GetWordList(config.HallOfFameChannelID)
+	return udic, nil
+}
+
+func getHallOfFameWords() ([]string, error) {
+	hofMap, err := traqapi.GetWordList(config.HallOfFameChannelID)
 	if err != nil {
-		return fmt.Errorf("failed to get hall of fame: %w", err)
+		return nil, fmt.Errorf("failed to get hall of fame: %w", err)
 	}
 
-	wordCountMap, err := converter.Messages2WordCountMap(msgs, udic, hof)
-	if err != nil {
-		return fmt.Errorf("failed to convert messages to word count map: %w", err)
+	hof := make([]string, 0, len(hofMap))
+	for k := range hofMap {
+		hof = append(hof, k)
 	}
 
-	// TODO: yearly wordcloudの実装時に戻す
-	// if err := db.InsertWordCounts(wordCountMap, date.Format("2006/01/02")); err != nil {
-	// 	return fmt.Errorf("failed to insert word counts: %w", err)
-	// }
-
-	img, err := wordcloud.GenerateWordcloud(wordCountMap)
-	if err != nil {
-		return fmt.Errorf("Error generating wordcloud: %w", err)
-	}
-
-	file, err := converter.Image2File(img, filepath.Join(os.TempDir(), "wordcloud.png"))
-	if err != nil {
-		return fmt.Errorf("Error converting image to file: %w", err)
-	}
-	defer file.Close()
-
-	fileID, err := traqapi.PostFile(config.TrendChannelID, file)
-	if err != nil {
-		return fmt.Errorf("Error posting file: %w", err)
-	}
-
-	if err := traqapi.PostMessage(
-		config.TrendChannelID,
-		generateMessageContent(wordCountMap, fileID, date),
-		true,
-	); err != nil {
-		return fmt.Errorf("Error posting wordcloud: %w", err)
-	}
-
-	return nil
+	return hof, nil
 }
 
 func generateMessageContent(wordMap map[string]int, fileID string, date time.Time) string {

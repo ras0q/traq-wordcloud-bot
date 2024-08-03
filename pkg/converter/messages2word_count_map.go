@@ -11,7 +11,7 @@ import (
 	"github.com/ikawaha/kagome/v2/tokenizer"
 )
 
-func Messages2WordCountMap(msgs []string, udic *dict.UserDict, hof map[string]struct{}) (map[string]int, error) {
+func Messages2WordCountMap(msgs []string, udic *dict.UserDict, hof []string) (map[string]int, error) {
 	t, err := tokenizer.New(ipa.DictShrink(), tokenizer.UserDict(udic), tokenizer.OmitBosEos())
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tokenizer: %w", err)
@@ -22,7 +22,7 @@ func Messages2WordCountMap(msgs []string, udic *dict.UserDict, hof map[string]st
 
 	var (
 		nounFilter           = filter.NewPOSFilter(filter.POS{"名詞", "カスタム名詞"})
-		exclusiveWordsFilter = filter.NewWordFilter([]string{"人", "感じ", "あと", "ー"})
+		exclusiveWordsFilter = filter.NewWordFilter(append(hof, "人", "感じ", "あと", "ー"))
 	)
 	for _, msg := range msgs {
 		msg := r.ReplaceAllString(msg, "")
