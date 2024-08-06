@@ -37,6 +37,10 @@ func Messages2WordCountMap(msgs []string, udic *dict.UserDict, hof []string) (ma
 
 		for _, token := range tokens {
 			sur := strings.ToLower(token.Surface)
+			if len(sur) < 2 {
+				continue
+			}
+
 			if _, found := wm[sur]; !found {
 				wm[sur] = struct{}{}
 			}
